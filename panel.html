@@ -57,7 +57,7 @@ pre{background:#030812;border:1px solid var(--line);border-radius:12px;padding:1
 
   <div id="app" class="hidden">
     <h2>&gt;_ <b>MY BOTS</b></h2>
-    <p class="muted">Aapke hosted bots.</p>
+    <p class="muted">Your hosted bots.</p>
     <button class="create" id="createBtn">+ CREATE BOT</button>
     <input class="search" id="search" placeholder="> bot search…">
     <div class="err" id="err"></div>
@@ -69,8 +69,8 @@ pre{background:#030812;border:1px solid var(--line);border-radius:12px;padding:1
   </div>
 
   <div id="fail" class="empty hidden">
-    <h3>Session nahi mila</h3>
-    <div>Telegram bot me <b>/panel</b> type karo aur naya link lo.</div>
+    <h3>Session not found</h3>
+    <div>Send <b>/panel</b> in the Telegram bot and get a new link.</div>
   </div>
 </div>
 
@@ -105,7 +105,7 @@ function decodeDoc(doc){
 }
 async function readDoc(){
   const r = await fetch(docUrl(docId));
-  if (!r.ok) throw new Error("Session expire ho gaya. Bot me /panel dobara bhejo.");
+  if (!r.ok) throw new Error("Session expired. Send /panel to the bot again.");
   return decodeDoc(await r.json());
 }
 async function writeFields(fields){
@@ -118,7 +118,7 @@ async function writeFields(fields){
   const r = await fetch(docUrl(docId, "&" + mask.join("&")), {
     method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
   });
-  if (!r.ok) throw new Error("Command bhejne me problem hui.");
+  if (!r.ok) throw new Error("Could not send the command.");
 }
 function esc(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 
@@ -127,8 +127,8 @@ function render(){
   const list = $("list");
   const shown = bots.filter(b => b.name.toLowerCase().includes(q));
   if (!bots.length){
-    list.innerHTML = `<div class="empty"><div style="font-size:30px">📥</div><h3>Abhi koi bot nahi hai</h3>
-      <div>+ CREATE BOT dabao, naam do aur apna .py / .js / .zip upload karo.</div></div>`;
+    list.innerHTML = `<div class="empty"><div style="font-size:30px">📥</div><h3>No bots yet</h3>
+      <div>Tap + CREATE BOT, then upload your .py / .js / .zip file.</div></div>`;
     return;
   }
   list.innerHTML = shown.map(b => `
@@ -137,7 +137,7 @@ function render(){
         <div class="bot-name">${esc(b.name)}</div>
         <span class="badge ${b.running ? "run" : "stop"}">${b.running ? "RUNNING" : "STOPPED"}</span>
       </div>
-      <div class="meta">${b.running ? "PID " + b.pid + " • Runtime " + b.runtime : "Bot band hai"}</div>
+      <div class="meta">${b.running ? "PID " + b.pid + " • Runtime " + b.runtime : "Bot is stopped"}</div>
       <div class="btns">
         ${b.running
           ? `<button data-act="stop" data-name="${esc(b.name)}">■ Stop</button><button class="act" data-act="restart" data-name="${esc(b.name)}">↻ Restart</button>`
@@ -145,11 +145,11 @@ function render(){
         <button data-act="logs" data-name="${esc(b.name)}">📜 Logs</button>
         <button class="del" data-act="delete" data-name="${esc(b.name)}">🗑 Delete</button>
       </div>
-    </div>`).join("") || `<div class="empty">"${esc(q)}" naam ka koi bot nahi mila.</div>`;
+    </div>`).join("") || `<div class="empty">"${esc(q)}" No bot found with that name.</div>`;
 }
 
 async function sendCommand(cmd, name){
-  if (cmd === "delete" && !confirm(`${name} ko permanently delete karna hai?`)) return;
+  if (cmd === "delete" && !confirm(`Permanently delete ${name}?`)) return;
   $("err").textContent = "";
   try{
     await writeFields({ command: cmd, commandId: String(Date.now()), commandBot: name });
@@ -178,7 +178,7 @@ $("search").addEventListener("input", render);
 
 $("createBtn").addEventListener("click", () => {
   if (botUser) window.open("https://t.me/" + botUser, "_blank");
-  else $("err").textContent = "Bot username nahi mila. Telegram me bot kholo aur Upload Bot dabao.";
+  else $("err").textContent = "Bot username not found. Open the bot in Telegram and tap Upload Bot.";
 });
 
 async function poll(){
