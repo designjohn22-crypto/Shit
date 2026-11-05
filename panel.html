@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>VOID HOSTING - My Bots</title>
+<style>
+:root{--bg:#050a14;--card:#0a1424;--line:#1a3a66;--blue:#2f7bff;--cyan:#5fd4ff;--text:#eef5ff;--mute:#8ea3c2;--ok:#3ee09a;--bad:#ff6f6f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+.wrap{max-width:720px;margin:0 auto;padding:16px}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0 14px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:48px;height:48px;border-radius:12px;background:linear-gradient(145deg,#0b2a55,#06101f);border:1px solid var(--line);display:grid;place-items:center;font-weight:900;color:var(--cyan);letter-spacing:1px;font-size:13px}
+.title{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:800;font-size:20px;letter-spacing:.5px}
+.title span{color:var(--cyan)}
+.sub{color:var(--mute);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
+.pill{padding:9px 14px;border:1px solid var(--line);border-radius:12px;font-size:13px;font-weight:700;letter-spacing:1px;display:flex;align-items:center;gap:8px;background:var(--card)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px var(--ok)}
+.dot.off{background:var(--bad);box-shadow:0 0 10px var(--bad)}
+h2{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:22px;margin:18px 0 4px;color:var(--text)}
+h2 b{color:var(--cyan)}
+.muted{color:var(--mute);font-size:14px;margin:0 0 14px}
+.create{width:100%;padding:16px;border:0;border-radius:14px;background:linear-gradient(90deg,#2f7bff,#1f5fe0);color:#fff;font-weight:800;font-size:16px;letter-spacing:.5px;cursor:pointer;box-shadow:0 0 22px rgba(47,123,255,.35)}
+.search{width:100%;margin:12px 0;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:15px;font-family:ui-monospace,Menlo,Consolas,monospace;outline:none}
+.search:focus{border-color:var(--blue)}
+.bot{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+.bot-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.bot-name{font-weight:800;font-size:16px;word-break:break-all}
+.badge{font-size:11px;font-weight:800;letter-spacing:1px;padding:5px 9px;border-radius:999px;border:1px solid}
+.run{color:var(--ok);border-color:rgba(62,224,154,.5)}
+.stop{color:var(--bad);border-color:rgba(255,111,111,.5)}
+.meta{color:var(--mute);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;margin:8px 0 10px}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.btns button{flex:1 1 auto;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#0c1c33;color:var(--text);font-weight:700;font-size:13px;cursor:pointer}
+.btns button.del{color:var(--bad);border-color:rgba(255,111,111,.4)}
+.btns button.act{background:#12305c}
+.empty{text-align:center;border:1px dashed var(--line);border-radius:16px;padding:36px 16px;color:var(--mute)}
+.empty h3{color:var(--text);margin:8px 0}
+pre{background:#030812;border:1px solid var(--line);border-radius:12px;padding:12px;min-height:160px;max-height:360px;overflow:auto;white-space:pre-wrap;font-size:12px;color:#cfe3ff;margin-top:14px}
+.err{color:var(--bad);font-size:13px;min-height:18px;margin:8px 0}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo">VOID</div>
+      <div>
+        <div class="title">VOID <span>HOSTING</span></div>
+        <div class="sub" id="expires">Web Panel</div>
+      </div>
+    </div>
+    <div class="pill"><span class="dot" id="dot"></span><span id="live">LIVE</span></div>
+  </header>
+
+  <div id="app" class="hidden">
+    <h2>&gt;_ <b>MY BOTS</b></h2>
+    <p class="muted">Aapke hosted bots.</p>
+    <button class="create" id="createBtn">+ CREATE BOT</button>
+    <input class="search" id="search" placeholder="> bot search…">
+    <div class="err" id="err"></div>
+    <div id="list"></div>
+    <div id="logWrap" class="hidden">
+      <div class="title" style="font-size:15px" id="logTitle">LOGS</div>
+      <pre id="logs">(No output yet)</pre>
+    </div>
+  </div>
+
+  <div id="fail" class="empty hidden">
+    <h3>Session nahi mila</h3>
+    <div>Telegram bot me <b>/panel</b> type karo aur naya link lo.</div>
+  </div>
+</div>
+
+<script>
+const PROJECT = "panelapi-1e915";
+const KEY = "AIzaSyC4Ev8kSPEAZJyJHH88qZwKef0WScMq_7c";
+const COL = "panelSessions";
+
+const params = new URLSearchParams(location.search);
+const token = params.get("t");
+history.replaceState(null, "", location.pathname); // remove token from the address bar
+
+let docId = "", selected = "", botUser = "", bots = [], expiresAt = 0;
+
+function $(id){ return document.getElementById(id); }
+function docUrl(id, extra = ""){
+  return `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents/${COL}/${id}?key=${KEY}${extra}`;
+}
+async function sha256Hex(text){
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+function decodeDoc(doc){
+  const out = {};
+  for (const [k, v] of Object.entries(doc.fields || {})){
+    if ("stringValue" in v) out[k] = v.stringValue;
+    else if ("integerValue" in v) out[k] = Number(v.integerValue);
+    else if ("booleanValue" in v) out[k] = v.booleanValue;
+    else if ("doubleValue" in v) out[k] = v.doubleValue;
+  }
+  return out;
+}
+async function readDoc(){
+  const r = await fetch(docUrl(docId));
+  if (!r.ok) throw new Error("Session expire ho gaya. Bot me /panel dobara bhejo.");
+  return decodeDoc(await r.json());
+}
+async function writeFields(fields){
+  const body = { fields: {} };
+  const mask = [];
+  for (const [k, v] of Object.entries(fields)){
+    mask.push("updateMask.fieldPaths=" + encodeURIComponent(k));
+    body.fields[k] = { stringValue: String(v) };
+  }
+  const r = await fetch(docUrl(docId, "&" + mask.join("&")), {
+    method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error("Command bhejne me problem hui.");
+}
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+function render(){
+  const q = $("search").value.trim().toLowerCase();
+  const list = $("list");
+  const shown = bots.filter(b => b.name.toLowerCase().includes(q));
+  if (!bots.length){
+    list.innerHTML = `<div class="empty"><div style="font-size:30px">📥</div><h3>Abhi koi bot nahi hai</h3>
+      <div>+ CREATE BOT dabao, naam do aur apna .py / .js / .zip upload karo.</div></div>`;
+    return;
+  }
+  list.innerHTML = shown.map(b => `
+    <div class="bot">
+      <div class="bot-top">
+        <div class="bot-name">${esc(b.name)}</div>
+        <span class="badge ${b.running ? "run" : "stop"}">${b.running ? "RUNNING" : "STOPPED"}</span>
+      </div>
+      <div class="meta">${b.running ? "PID " + b.pid + " • Runtime " + b.runtime : "Bot band hai"}</div>
+      <div class="btns">
+        ${b.running
+          ? `<button data-act="stop" data-name="${esc(b.name)}">■ Stop</button><button class="act" data-act="restart" data-name="${esc(b.name)}">↻ Restart</button>`
+          : `<button class="act" data-act="start" data-name="${esc(b.name)}">▶ Start</button>`}
+        <button data-act="logs" data-name="${esc(b.name)}">📜 Logs</button>
+        <button class="del" data-act="delete" data-name="${esc(b.name)}">🗑 Delete</button>
+      </div>
+    </div>`).join("") || `<div class="empty">"${esc(q)}" naam ka koi bot nahi mila.</div>`;
+}
+
+async function sendCommand(cmd, name){
+  if (cmd === "delete" && !confirm(`${name} ko permanently delete karna hai?`)) return;
+  $("err").textContent = "";
+  try{
+    await writeFields({ command: cmd, commandId: String(Date.now()), commandBot: name });
+    if (cmd === "logs"){ selected = name; await writeFields({ selectedBot: name }); $("logWrap").classList.remove("hidden"); }
+    setTimeout(poll, 700);
+  }catch(e){ $("err").textContent = e.message; }
+}
+
+async function selectLogs(name){
+  selected = name;
+  $("logWrap").classList.remove("hidden");
+  $("logTitle").textContent = "LOGS • " + name;
+  try { await writeFields({ selectedBot: name }); } catch(e){ $("err").textContent = e.message; }
+  setTimeout(poll, 500);
+}
+
+document.addEventListener("click", e => {
+  const btn = e.target.closest("button[data-act]");
+  if (!btn) return;
+  const act = btn.dataset.act, name = btn.dataset.name;
+  if (act === "logs") selectLogs(name);
+  else sendCommand(act, name);
+});
+
+$("search").addEventListener("input", render);
+
+$("createBtn").addEventListener("click", () => {
+  if (botUser) window.open("https://t.me/" + botUser, "_blank");
+  else $("err").textContent = "Bot username nahi mila. Telegram me bot kholo aur Upload Bot dabao.";
+});
+
+async function poll(){
+  try{
+    const d = await readDoc();
+    botUser = d.botUsername || botUser;
+    bots = JSON.parse(d.bots || "[]");
+    $("dot").classList.remove("off"); $("live").textContent = "LIVE";
+    if (d.lastError) $("err").textContent = d.lastError;
+    if (selected && !$("logWrap").classList.contains("hidden")){
+      $("logTitle").textContent = "LOGS • " + selected;
+      $("logs").textContent = d.logs || "(No output yet)";
+    }
+    render();
+  }catch(e){
+    $("dot").classList.add("off"); $("live").textContent = "OFFLINE";
+    $("err").textContent = e.message;
+  }
+}
+
+async function init(){
+  if (!token){ $("fail").classList.remove("hidden"); return; }
+  try{
+    docId = await sha256Hex(token);
+    const d = await readDoc();
+    expiresAt = d.expires || 0;
+    $("expires").textContent = "Web Panel • expires " + new Date(expiresAt * 1000).toLocaleTimeString();
+    $("app").classList.remove("hidden");
+    await poll();
+    setInterval(poll, 2000);
+  }catch(e){
+    $("fail").classList.remove("hidden");
+    $("fail").querySelector("div:last-child").textContent = e.message;
+  }
+}
+init();
+</script>
+</body>
+</html>
